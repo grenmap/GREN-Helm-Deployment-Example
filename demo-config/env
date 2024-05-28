@@ -1,0 +1,22 @@
+# Root Environment File
+# This is a modified verison of the root environment file used in the GREN Map DB Node development 
+# environment compose. The Helm demonstration project uses it to configure the way the containers
+# are built. 
+
+# Environment variables for GREN Map DB Node Service Provider (SP)
+MAP1_HOST_NAME=map.example.org
+MAP1_HOST_PORT=30443
+
+# Environment variable configuration for the Shibboleth SSO IDP & LDAP containers
+IDP_HOST_NAME=idp.example.org
+LDAPPWD=ChangePassword
+
+# Environment variables for the default values in the Shibboleth template file at "websp/templates/shib/shibboleth2.xml"
+# Only uncomment and make changes when needed. 
+# For development, their default values are as the follows, this sets up a defualt trust in the SP to with the development IdP:
+# METADATA_PROVIDERS='<MetadataProvider type="XML" validate="true" path="/etc/shibboleth/idp-metadata.xml"/>'
+# IDP_SSO='<SSO discoveryProtocol="SAMLDS" discoveryURL="https://__MAP_HOST_NAME__:__MAP_HOST_PORT__/shibboleth-ds/index.html">SAML2 SAML1</SSO>'
+
+# The SP uses an Embeded Discovery Service (EDS) to run without it and directly go to the IdP this variable can be used.
+# IDP_SSO='<SSO entityID="https://__IDP_HOST_NAME__/idp/shibboleth">SAML2 SAML1</SSO>'
+

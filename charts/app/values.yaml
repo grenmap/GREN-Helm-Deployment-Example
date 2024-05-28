@@ -1,0 +1,12 @@
+enabled: true
+service:
+  port: 8080
+image:
+  repository: grenmap-django
+  tag: "latest"
+  imagePullPolicy: IfNotPresent
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Annotations to add to the service account
+  annotations: {}

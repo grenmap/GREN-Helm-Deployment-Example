@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: Service
+metadata:
+  creationTimestamp: null
+  labels:
+    app.kubernetes.io/name: {{ .Release.Name }}-{{ .Chart.Name }}
+  name: websp
+spec:
+  ports:
+    - protocol: "TCP"
+      port: {{ .Values.service.port }} 
+      targetPort: 8443
+      #this is port number greater than 30000, and it is port of the Node where this cluster is present.
+      {{- if eq .Values.service.type "NodePort" }}
+      nodePort: {{ .Values.service.nodePort }} 
+      {{- end }}
+  type: {{ .Values.service.type }}
+  selector:
+    app.kubernetes.io/name: {{ .Release.Name }}-{{ .Chart.Name }}
+  
+status:
+  loadBalancer: {}

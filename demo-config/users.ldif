@@ -1,0 +1,50 @@
+# LDPA configuration file for use in the Helm demonstration project. Ity is intended only
+# for use in a local demonstration setting to show the GREN Map loggign in via SSO.
+# A single user with credentials admin/admin is created.
+
+# example.org
+dn: dc=example,dc=org
+objectClass: dcObject
+objectClass: organization
+dc: example
+o: example
+
+dn: ou=People,dc=example,dc=org
+ou: People
+description: All people in example.org
+objectClass: top
+objectClass: organizationalUnit
+
+dn: uid=admin,ou=People,dc=example,dc=org
+objectClass: organizationalPerson
+objectClass: person
+objectClass: top
+objectClass: inetOrgPerson
+objectClass: eduPerson
+surname: Admin
+givenName: Adam
+displayName: Admin
+cn: admin
+uid: admin
+mail: admin@example.org
+userPassword: admin
+eduPersonAffiliation: member
+eduPersonAffiliation: student
+eduPersonPrincipalName: admin@example.org
+
+dn: uid=user,ou=People,dc=example,dc=org
+objectClass: organizationalPerson
+objectClass: person
+objectClass: top
+objectClass: inetOrgPerson
+objectClass: eduPerson
+surname: User
+givenName: Peter
+displayName: User
+cn: user
+uid: user
+mail: admin@example.org
+userPassword: user
+eduPersonAffiliation: member
+eduPersonAffiliation: student
+eduPersonPrincipalName: user@example.org

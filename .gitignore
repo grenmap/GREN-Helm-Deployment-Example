@@ -1,0 +1,5 @@
+# Ignore mac files
+**/.DS_Store
+
+# Don't include keys and certificates
+**/*.pem

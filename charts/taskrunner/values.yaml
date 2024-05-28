@@ -1,0 +1,5 @@
+enabled: true
+image:
+  repository: grenmap-django
+  tag: "latest"
+  imagePullPolicy: IfNotPresent

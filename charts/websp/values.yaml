@@ -1,0 +1,25 @@
+enabled: true
+replicaCount: 1
+service:
+  port: 8443
+  type: NodePort
+  nodePort: 30080
+image:
+  repository: grenmap-websp
+  tag: "latest"
+  imagePullPolicy: IfNotPresent
+app_image:
+  repository: grenmap-django
+  tag: "latest"
+  imagePullPolicy: IfNotPresent
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Annotations to add to the service account
+  annotations: {}
+shib:
+  map_host_name: map.example.org
+  idp_host_name: idp.example.org
+  # Provide secretName when not use Keeper Secret Manager
+  # secret:
+  #  secretName: websp-keys-certs

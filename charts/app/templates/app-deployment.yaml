@@ -1,0 +1,137 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels:
+    app.kubernetes.io/name: app
+  name: app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: app
+  strategy: {}
+  template:
+    metadata:
+      creationTimestamp: null
+      # Force a deployment with helm upgrade
+      annotations:
+        rollme: {{ randAlphaNum 5 | quote }}
+      labels:
+        app.kubernetes.io/name: app
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
+          imagePullPolicy: {{ .Values.image.imagePullPolicy }}
+          name: app
+          ports:
+            - containerPort: 8080
+          startupProbe:
+            exec:
+              command:
+              - curl
+              - -f
+              - http://127.0.0.1:8080
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            failureThreshold: 30
+          {{- if .Values.global.livenessProbe.enabled }}
+          livenessProbe:
+            exec:
+              command:
+              - curl
+              - -f
+              - http://127.0.0.1:8080
+            initialDelaySeconds: {{ .Values.global.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.global.livenessProbe.periodSeconds }}
+            failureThreshold: {{ .Values.global.livenessProbe.failureThreshold }}
+          {{- end }}
+          args:
+            - gunicorn
+            - base_app.wsgi:application
+            - --bind
+            - 0.0.0.0:8080
+            - --log-level=info
+            - --threads
+            - "4"
+          env:
+            - name: ADMIN_EPPNS
+              valueFrom:
+                configMapKeyRef:
+                  key: ADMIN_EPPNS
+                  name: {{ .Release.Name }}-config
+            - name: DATABASE
+              valueFrom:
+                configMapKeyRef:
+                  key: DATABASE
+                  name: {{ .Release.Name }}-config
+            - name: DEBUG
+              valueFrom:
+                configMapKeyRef:
+                  key: DEBUG
+                  name: {{ .Release.Name }}-config
+            - name: DEVELOPMENT
+              valueFrom:
+                configMapKeyRef:
+                  key: DEVELOPMENT
+                  name: {{ .Release.Name }}-config
+            - name: DJANGO_ALLOWED_HOSTS
+              valueFrom:
+                configMapKeyRef:
+                  key: DJANGO_ALLOWED_HOSTS
+                  name: {{ .Release.Name }}-config
+            - name: POSTGRES_DB
+              valueFrom:
+                configMapKeyRef:
+                  key: POSTGRES_DB
+                  name: {{ .Release.Name }}-config
+            - name: POSTGRES_USER
+              valueFrom:
+                configMapKeyRef:
+                  key: POSTGRES_USER
+                  name: {{ .Release.Name }}-config
+            - name: REDIS_HOST
+              valueFrom:
+                configMapKeyRef:
+                  key: REDIS_HOST
+                  name: {{ .Release.Name }}-config
+            - name: SANDBOX
+              valueFrom:
+                configMapKeyRef:
+                  key: SANDBOX
+                  name: {{ .Release.Name }}-config
+            - name: SQL_ENGINE
+              valueFrom:
+                configMapKeyRef:
+                  key: SQL_ENGINE
+                  name: {{ .Release.Name }}-config
+            - name: SQL_HOST
+              valueFrom:
+                configMapKeyRef:
+                  key: SQL_HOST
+                  name: {{ .Release.Name }}-config
+            - name: SQL_PORT
+              valueFrom:
+                configMapKeyRef:
+                  key: SQL_PORT
+                  name: {{ .Release.Name }}-config
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  key: postgres_passwd
+                  name: {{ .Values.global.django.secretName }}
+            - name: SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  key: secret_key
+                  name: {{ .Values.global.django.secretName }}
+          {{- with .Values.global.securityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+      restartPolicy: Always
+status: {}

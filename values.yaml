@@ -1,0 +1,67 @@
+# Configuration file for development
+
+db:
+  # Enabled to use a local container for PostgreSQL database
+  enabled: true
+
+app:
+  admin:
+    # The space-delimited admin users' eduPersonPrincipalName(EPPN) list to authorize them permission to manage the instance
+    # More information about EPPN: https://www.switch.ch/aai/support/documents/attributes/edupersonprincipalname/
+    admin_eppns: admin@example.org
+  image:
+    # Use local build image for development
+    repository: grenmap-django
+    tag: latest
+    imagePullPolicy: IfNotPresent
+
+taskrunner:
+  image:
+    repository: grenmap-django
+    tag: latest
+    imagePullPolicy: IfNotPresent
+
+websp:
+  service:
+    type: NodePort
+    nodePort: 30443
+  shib:
+    map_host_name: map.example.org
+    metadata_providers: '<MetadataProvider type="XML" validate="true" path="/etc/shibboleth/idp-metadata.xml"/>'
+    metadata_cert: ''
+    # IdP without EDS
+    #idp_sso: '<SSO entityID="https://idp.example.org/idp/shibboleth">SAML2 SAML1</SSO>'
+    # IdP with EDS
+    idp_sso: |-
+      <SSO discoveryProtocol="SAMLDS" discoveryURL="https://__MAP_HOST_NAME__:__MAP_HOST_PORT__/shibboleth-ds/index.html">
+          SAML2 SAML1
+      </SSO>
+    eds_logo: 'images/eds_logo.png'
+    secret:
+      secretName: websp-keys-certs
+  app_image:
+    repository: grenmap-django
+    tag: latest
+    imagePullPolicy: IfNotPresent
+  image:
+    repository: grenmap-websp
+    tag: latest
+    imagePullPolicy: IfNotPresent
+
+ingress:
+  enabled: false
+
+global:
+  django:
+    # Local container name for PostgreSQL database
+    postgres_host: db
+    postgres_port: 5432
+    postgres_db: grenmap_db
+    postgres_user: db_admin
+    # Secret used by Kubernetes cluster to get the database password and the Django secret key
+    secretName: postgres-passwd-and-secret-key
+  livenessProbe:
+    enabled: true
+    initialDelaySeconds: 0
+    periodSeconds: 10
+    failureThreshold: 6

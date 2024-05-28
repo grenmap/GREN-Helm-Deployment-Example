@@ -1,0 +1,126 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app.kubernetes.io/name: {{ .Release.Name }}-{{ .Chart.Name }}
+  name: {{ .Release.Name }}-{{ .Chart.Name }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ .Release.Name }}-{{ .Chart.Name }}
+  strategy: {}
+  template:
+    metadata:
+      # Force a deployment with helm upgrade
+      annotations:
+        rollme: {{ randAlphaNum 5 | quote }}
+      labels:
+        app.kubernetes.io/name: {{ .Release.Name }}-{{ .Chart.Name }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ .Release.Name }}-{{ .Chart.Name }}
+      initContainers:
+        - name: collectstatic
+          image: {{ .Values.app_image.repository }}:{{ .Values.app_image.tag }}
+          imagePullPolicy: {{ .Values.app_image.imagePullPolicy }}
+          command: ['python', 'manage.py', 'collectstatic', '--no-input']
+          env:
+            - name: SECRET_KEY
+              value: {{ randAlphaNum 32 | quote }}
+          {{- with .Values.global.securityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          volumeMounts:
+            - name: static-volume
+              mountPath: /home/grenmapadmin/web/staticfiles
+      containers:
+        - image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
+          imagePullPolicy: {{ .Values.image.imagePullPolicy }}
+          name: {{ .Release.Name }}-{{ .Chart.Name }}
+          ports:
+            - containerPort: 8443
+          startupProbe:
+            exec:
+              command:
+              - curl
+              - -k
+              - -f
+              - https://127.0.0.1:8443/Shibboleth.sso/Status
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            failureThreshold: 30
+          {{- if .Values.global.livenessProbe.enabled }}
+          livenessProbe:
+            exec:
+              command:
+              - curl
+              - -k
+              - -f
+              - https://127.0.0.1:8443/Shibboleth.sso/Status
+            initialDelaySeconds: {{ .Values.global.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.global.livenessProbe.periodSeconds }}
+            failureThreshold: {{ .Values.global.livenessProbe.failureThreshold }}
+          {{- end }}
+          env:
+            - name: MAP_HOST_NAME
+              valueFrom:
+                configMapKeyRef:
+                  key: MAP_HOST_NAME
+                  name: {{ .Release.Name }}-{{ .Chart.Name }}-config
+            - name: MAP_HOST_PORT
+              valueFrom:
+                configMapKeyRef:
+                  key: MAP_HOST_PORT
+                  name: {{ .Release.Name }}-{{ .Chart.Name }}-config
+            - name: IDP_HOST_NAME
+              valueFrom:
+                configMapKeyRef:
+                  key: IDP_HOST_NAME
+                  name: {{ .Release.Name }}-{{ .Chart.Name }}-config
+            - name: METADATA_PROVIDERS
+              valueFrom:
+                configMapKeyRef:
+                  key: METADATA_PROVIDERS
+                  name: {{ .Release.Name }}-{{ .Chart.Name }}-config
+            - name: IDP_SSO
+              valueFrom:
+                configMapKeyRef:
+                  key: IDP_SSO
+                  name: {{ .Release.Name }}-{{ .Chart.Name }}-config
+          {{- with .Values.securityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          volumeMounts:
+            - mountPath: /home/grenmapadmin/web/staticfiles
+              name: static-volume
+            - mountPath: /run/secrets/
+              name: keys-certs-volume
+              readOnly: true
+            {{- if .Values.shib.metadata_cert }}
+            - mountPath: /etc/shibboleth/{{ .Values.shib.metadata_cert }}
+              subPath: {{ .Values.shib.metadata_cert }}
+              name: configmap-volume
+            {{- end }}
+            {{- if .Values.shib.eds_logo }}
+            - mountPath: /var/www/html/shibboleth-ds/eds_logo.png.encoded
+              subPath: EDS_LOGO
+              name: configmap-volume
+            {{- end }}
+      volumes:
+        - name: static-volume
+          emptyDir: {}
+        - name: keys-certs-volume
+          secret:
+            defaultMode: 420 # This is decimal and maps to 644 octal
+            optional: false
+            secretName: {{ .Values.shib.secret.secretName }}
+        - name: configmap-volume
+          configMap:
+            name: {{ .Release.Name }}-{{ .Chart.Name }}-config
+status: {}

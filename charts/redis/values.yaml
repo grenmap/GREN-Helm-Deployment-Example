@@ -1,0 +1,4 @@
+enabled: true
+image:
+  repository: bitnami/redis
+  tag: "7.0"

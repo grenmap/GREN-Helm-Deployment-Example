@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app.kubernetes.io/name: {{ .Release.Name }}-db
+  name: {{ .Release.Name }}-db
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ .Release.Name }}-db
+  strategy: {}
+  template:
+    metadata:
+      # Force a deployment with helm upgrade
+      annotations:
+        rollme: {{ randAlphaNum 5 | quote }}
+      labels:
+        app.kubernetes.io/name: {{ .Release.Name }}-db
+    spec:
+      containers:
+        - image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
+          imagePullPolicy: Always
+          name: {{ .Release.Name }}-db
+          env:
+            - name: POSTGRES_DB
+              valueFrom:
+                configMapKeyRef:
+                  key: POSTGRES_DB
+                  name: {{ .Release.Name }}-config
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  key: postgres_passwd
+                  name: {{ .Values.global.django.secretName }}
+            - name: POSTGRES_USER
+              valueFrom:
+                configMapKeyRef:
+                  key: POSTGRES_USER
+                  name: {{ .Release.Name }}-config
+          volumeMounts:
+            - mountPath: /var/lib/postgresql/data/
+              name: postgres-data
+      restartPolicy: Always
+      volumes:
+        - name: postgres-data
+          emptyDir: {}
+status: {}

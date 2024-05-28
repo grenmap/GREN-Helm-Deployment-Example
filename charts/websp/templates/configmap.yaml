@@ -1,0 +1,26 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  labels:
+    app.kubernetes.io/name: {{ .Release.Name }}-{{ .Chart.Name }}-config
+  name: {{ .Release.Name }}-{{ .Chart.Name }}-config
+data:
+  {{- with .Values.shib }}
+  DJANGO_ALLOWED_HOSTS: "localhost 127.0.0.1 [::1] app {{ .map_host_name }}"
+  MAP_HOST_NAME: {{ .map_host_name }}
+  IDP_HOST_NAME: {{ .idp_host_name | default "" }}
+  METADATA_PROVIDERS: {{ .metadata_providers | quote }}
+  IDP_SSO: {{ .idp_sso | quote }}
+  {{- end }}
+  {{- if eq .Values.service.type "NodePort" }}
+  MAP_HOST_PORT: {{ .Values.service.nodePort | default "443"  | quote }}
+  {{- end }}
+  {{- if eq .Values.service.type "ClusterIP" }}
+  MAP_HOST_PORT: "443"
+  {{- end }}
+  {{- if .Values.shib.metadata_cert }}
+  {{- (.Files.Glob "verifymetadata/*").AsConfig | nindent 2 }}
+  {{- end }}
+  {{- if .Values.shib.eds_logo }}
+  EDS_LOGO: {{ .Files.Get .Values.shib.eds_logo | b64enc }}
+  {{- end }}

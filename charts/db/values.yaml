@@ -1,0 +1,11 @@
+enabled: true
+service:
+  port: 5432
+image:
+  repository: postgres
+  tag: "13-alpine"
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Annotations to add to the service account
+  annotations: {}

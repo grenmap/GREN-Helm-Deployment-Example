@@ -1,0 +1,83 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels:
+    app.kubernetes.io/name: {{ .Release.Name }}-{{ .Chart.Name }}
+  name: {{ .Release.Name }}-{{ .Chart.Name }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ .Release.Name }}-{{ .Chart.Name }}
+  strategy: {}
+  template:
+    metadata:
+      creationTimestamp: null
+      # Force a deployment with helm upgrade
+      annotations:
+        rollme: {{ randAlphaNum 5 | quote }}
+      labels:
+        app.kubernetes.io/name: {{ .Release.Name }}-{{ .Chart.Name }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
+          imagePullPolicy: {{ .Values.image.imagePullPolicy }}
+          name: {{ .Release.Name }}-{{ .Chart.Name }}
+          args:
+            - python
+            - manage.py
+            - qcluster
+          command:
+            - ./task_runner.sh
+          env:
+            - name: REDIS_HOST
+              valueFrom:
+                configMapKeyRef:
+                  key: REDIS_HOST
+                  name: {{ .Release.Name }}-config
+            - name: POSTGRES_DB
+              valueFrom:
+                configMapKeyRef:
+                  key: POSTGRES_DB
+                  name: {{ .Release.Name }}-config
+            - name: POSTGRES_USER
+              valueFrom:
+                configMapKeyRef:
+                  key: POSTGRES_USER
+                  name: {{ .Release.Name }}-config
+            - name: SQL_ENGINE
+              valueFrom:
+                configMapKeyRef:
+                  key: SQL_ENGINE
+                  name: {{ .Release.Name }}-config
+            - name: SQL_HOST
+              valueFrom:
+                configMapKeyRef:
+                  key: SQL_HOST
+                  name: {{ .Release.Name }}-config
+            - name: SQL_PORT
+              valueFrom:
+                configMapKeyRef:
+                  key: SQL_PORT
+                  name: {{ .Release.Name }}-config
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  key: postgres_passwd
+                  name: {{ .Values.global.django.secretName }}
+            - name: SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  key: secret_key
+                  name: {{ .Values.global.django.secretName }}
+          {{- with .Values.global.securityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+      restartPolicy: Always
+status: {}
